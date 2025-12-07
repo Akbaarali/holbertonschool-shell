@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Display the number of requests by IP and HTTP status code
+# Show how many times each (IP, status) pair appears
 
-awk '{print $1, $9}' apache-access.log \
+logfile=${1:-apache-access.log}
+
+awk '$9 ~ /^[0-9]+$/ { print $1, $9 }' "$logfile" \
   | sort \
   | uniq -c \
   | sort -nr \
-  | awk '{print $1, $2, $3}'
+  | awk '{ print $1, $2, $3 }'
