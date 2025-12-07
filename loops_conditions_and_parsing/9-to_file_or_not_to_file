@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
+# This script prints information about the file named 'school'
 
-if [ ! -e school ]
-then
+if [ ! -e "school" ]; then
     echo "school file does not exist"
 else
     echo "school file exists"
-    if [ -f school ]
-    then
-        if [ ! -s school ]
-        then
-            echo "school file is empty"
-        else
+    if [ -f "school" ]; then
+        if [ -s "school" ]; then
             echo "school file is not empty"
-            echo "school is a regular file"
+        else
+            echo "school file is empty"
         fi
+        echo "school is a regular file"
     fi
 fi
