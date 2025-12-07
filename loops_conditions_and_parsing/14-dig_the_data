@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Show how many times each (IP, status) pair appears
+# Input is read from STDIN (e.g. ./14-dig_the_data < apache-access.log)
+
+awk '
+  $9 ~ /^[0-9]+$/ { print $1, $9 }  # keep only lines with numeric status; print "IP STATUS"
+' \
+| sort \
+| uniq -c \
+| sort -nr \
+| awk '{ print $1, $2, $3 }'
