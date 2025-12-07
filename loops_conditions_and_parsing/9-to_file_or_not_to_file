@@ -6,13 +6,16 @@ if [ ! -e "school" ]; then
 else
     echo "school file exists"
 
-    # Only do the extra checks if it's a regular file
+    # 1) Always check if the file is empty or not (even if it's a directory)
+    if [ -s "school" ]; then
+        echo "school file is not empty"
+    else
+        echo "school file is empty"
+    fi
+
+    # 2) Only if it's a regular file, print the extra line
     if [ -f "school" ]; then
-        if [ -s "school" ]; then
-            echo "school file is not empty"
-        else
-            echo "school file is empty"
-        fi
         echo "school is a regular file"
     fi
+    # If it's NOT a regular file, we print nothing extra (as required)
 fi
