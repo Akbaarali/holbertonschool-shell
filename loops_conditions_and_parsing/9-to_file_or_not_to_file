@@ -12,7 +12,5 @@ else
             echo "school file is empty"
         fi
         echo "school is a regular file"
-    else
-        echo "school is not a regular file"
     fi
 fi
