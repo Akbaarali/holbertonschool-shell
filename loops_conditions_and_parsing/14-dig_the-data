@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
-# This script groups visitors by IP and HTTP status code from apache-access.log
-# Output format: OCCURRENCE_NUMBER IP HTTP_CODE
+# Display the number of requests by IP and HTTP status code
 
-awk '
-{
-    # Build a key "IP CODE" for each line
-    key = $1 " " $9
-    count[key]++
-}
-END {
-    # Print "COUNT IP CODE" for each key
-    for (k in count) {
-        print count[k], k
-    }
-}' apache-access.log | sort -nr
+awk '{print $1, $9}' apache-access.log \
+  | sort \
+  | uniq -c \
+  | sort -nr \
+  | awk '{print $1, $2, $3}'
