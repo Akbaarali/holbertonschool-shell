@@ -8,8 +8,6 @@ awk '
     count[key]++
   }
   END {
-    for (k in count) {
-      print count[k], k
-    }
+    for (k in count) print count[k], k
   }
 ' apache-access.log | sort -k1,1nr -k2,2 -k3,3
