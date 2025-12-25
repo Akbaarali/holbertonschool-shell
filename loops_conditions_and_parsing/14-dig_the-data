@@ -4,10 +4,10 @@
 awk '
   $1 ~ /^[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/ &&
   $9 ~ /^[0-9][0-9][0-9]$/ {
-    key = $1 " " $9
-    count[key]++
+    print $1, $9
   }
-  END {
-    for (k in count) print count[k], k
-  }
-' apache-access.log | sort -k1,1nr -k2,2 -k3,3
+' apache-access.log \
+| sort \
+| uniq -c \
+| sort -k1,1nr -k2,2 -k3,3 \
+| awk '{ print $1, $2, $3 }'
