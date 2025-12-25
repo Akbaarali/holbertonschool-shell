@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Group visitors by IP and HTTP status code, then display counts (desc).
+# parses an Apache log file and displays the number of occurrences of each IP/status pair
+# Format: OCCURRENCE_NUMBER IP HTTP_CODE (sorted from greatest to lowest)
 
-awk '$1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $9 ~ /^[0-9]{3}$/ {print $1, $9}' apache-access.log \
+# extract the IP and HTTP status code, sort them, count unique occurrences, sort again,
+# and reformat the count and fields
+awk '{ print $1, $9 }' apache-access.log \
   | sort \
   | uniq -c \
-  | sort -k1,1nr -k2,2 -k3,3 \
-  | awk '{print $1, $2, $3}'
+  | sort -nr \
+  | awk '{ print $1, $2, $3 }'
