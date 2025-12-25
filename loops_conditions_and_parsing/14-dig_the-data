@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
-# Groups visitors by IP and HTTP status code, printing: OCCURRENCES IP HTTP_CODE
-
-LOGFILE="apache-access.log"
-
-# If the log file doesn't exist, output nothing (avoid crashing the checker)
-[ -f "$LOGFILE" ] || exit 0
+# Display the number of occurrences of each (IP, HTTP status) pair in apache-access.log
 
 awk '
-  # keep only lines that look like: <ip> ... <status>
   $1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $9 ~ /^[0-9]{3}$/ { print $1, $9 }
-' "$LOGFILE" \
+' apache-access.log \
 | sort \
 | uniq -c \
-| sort -nr \
-| awk '{ print $1, $2, $3 }'
+| sort -nr
