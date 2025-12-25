@@ -1,23 +1,15 @@
 #!/usr/bin/env bash
-# Display the number of occurrences of each (IP, HTTP status) pair in apache-access.log
+# Display the number of occurrences of each (IP, HTTP status code) pair in apache-access.log
 
 awk '
-NF >= 9 && $1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $9 ~ /^[0-9]{3}$/ {
-  key = $1 " " $9
-  count[key]++
-}
-END {
-  for (k in count) {
-    print count[k], k
+  $1 ~ /^[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/ &&
+  $9 ~ /^[0-9][0-9][0-9]$/ {
+    key = $1 " " $9
+    count[key]++
   }
-}
-' apache-access.log | sort -nr -k1,1 -k2,2V -k3,3n
-
-
-
-
-
-
-
-
-
+  END {
+    for (k in count) {
+      print count[k], k
+    }
+  }
+' apache-access.log | sort -nr
