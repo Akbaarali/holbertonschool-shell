@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Display the number of occurrences of each (IP, HTTP status code) pair in apache-access.log
+# Group visitors by IP and HTTP status code, then display counts (desc).
 
-awk '{ print $1, $9 }' apache-access.log \
+./13-lets_parse_apache_logs \
   | sort \
   | uniq -c \
   | sort -nr \
-  | awk '{ printf "%5d %s %s\n", $1, $2, $3 }'
+  | awk '{print $1, $2, $3}'
