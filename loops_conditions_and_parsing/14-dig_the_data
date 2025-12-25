@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# Groups visitors by IP and HTTP status code, then prints occurrences sorted descending.
+# Display the number of occurrences of each (IP, HTTP status) pair in apache-access.log
 
 awk '
-# Strict Apache-ish format checks:
-# - First field must look like IPv4
-# - Status code must be exactly 3 digits
-# - Must have at least 9 fields (so $9 exists)
-$1 ~ /^[0-9]+\.[0]()
+NF >= 9 && $1 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {
+  code = $9
+  gsub(/\r/, "", code)          # handle CRLF line endings
+  if (code ~ /^[0-9]{3}$/) {
+    key = $1 " " code
+    count[key]++
+  }
+}
+END {
+  for (k in count) {
+    print count[k], k
+  }
+}
+' apache-access.log | sort -nr -k1,1 -k2,2V -k3,3n
