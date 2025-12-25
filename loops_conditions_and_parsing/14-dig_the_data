@@ -2,19 +2,8 @@
 # Groups visitors by IP and HTTP status code, then prints occurrences sorted descending.
 
 awk '
-{
-  ip = $1
-  code = $9
-
-  # Keep only valid looking values
-  if (ip != "" && code ~ /^[0-9][0-9][0-9]$/) {
-    key = ip " " code
-    count[key]++
-  }
-}
-END {
-  for (k in count) {
-    print count[k], k
-  }
-}
-' apache-access.log | sort -rn -k1,1
+# Strict Apache-ish format checks:
+# - First field must look like IPv4
+# - Status code must be exactly 3 digits
+# - Must have at least 9 fields (so $9 exists)
+$1 ~ /^[0-9]+\.[0]()
