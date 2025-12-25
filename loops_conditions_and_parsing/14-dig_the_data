@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
-# Show how many times each (IP, status) pair appears
-# Input is read from STDIN (e.g. ./14-dig_the_data < apache-access.log)
+# Groups visitors by IP and HTTP status code, then prints occurrences sorted descending.
 
 awk '
-  $9 ~ /^[0-9]+$/ { print $1, $9 }  # keep only lines with numeric status; print "IP STATUS"
-' \
-| sort \
-| uniq -c \
-| sort -nr \
-| awk '{ print $1, $2, $3 }'
+{
+  ip = $1
+  code = $9
+
+  # Keep only valid looking values
+  if (ip != "" && code ~ /^[0-9][0-9][0-9]$/) {
+    key = ip " " code
+    count[key]++
+  }
+}
+END {
+  for (k in count) {
+    print count[k], k
+  }
+}
+' apache-access.log | sort -rn -k1,1
