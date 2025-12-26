@@ -1,57 +1,49 @@
 #!/usr/bin/env bash
-# init-like script that starts/stops/restarts the manage_my_process daemon
+# init-like script that starts/stops/restarts manage_my_process
 
-PIDFILE="/var/run/my_process.pid"
 DAEMON="./manage_my_process"
+PIDFILE="/var/run/my_process.pid"
 
-start_process() {
-  mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
-
+do_start() {
   nohup "$DAEMON" >/dev/null 2>&1 &
-  echo "$!" > "$PIDFILE"
-
+  sudo sh -c "echo $! > '$PIDFILE'"
   echo "manage_my_process started"
 }
 
-stop_process() {
-  if [ -f "$PIDFILE" ]; then
-    PID="$(cat "$PIDFILE" 2>/dev/null)"
+do_stop() {
+  if sudo test -f "$PIDFILE"; then
+    PID="$(sudo cat "$PIDFILE" 2>/dev/null)"
 
-    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-      kill "$PID" 2>/dev/null || true
-
-      # Give it a moment, then force kill if still alive
+    if [ -n "$PID" ] && sudo kill -0 "$PID" 2>/dev/null; then
+      sudo kill "$PID" 2>/dev/null || true
       sleep 0.2
-      if kill -0 "$PID" 2>/dev/null; then
-        kill -9 "$PID" 2>/dev/null || true
+      if sudo kill -0 "$PID" 2>/dev/null; then
+        sudo kill -9 "$PID" 2>/dev/null || true
       fi
     fi
 
-    rm -f "$PIDFILE" 2>/dev/null || true
+    sudo rm -f "$PIDFILE"
   fi
-
-  # Extra safety: if anything is still running, kill by name
-  pkill -f "./manage_my_process" 2>/dev/null || true
-  pkill -f "manage_my_process" 2>/dev/null || true
 
   echo "manage_my_process stopped"
 }
 
-restart_process() {
-  stop_process >/dev/null 2>&1
-  start_process >/dev/null 2>&1
+do_restart() {
+  # must print ONLY: manage_my_process restarted
+  do_stop >/dev/null 2>&1
+  do_start >/dev/null 2>&1
   echo "manage_my_process restarted"
 }
 
 case "$1" in
   start)
-    start_process
+    do_start
     ;;
   stop)
-    stop_process
+    do_stop
     ;;
   restart)
-    restart_process
+    do_restart
     ;;
   *)
     echo "Usage: manage_my_process {start|stop|restart}"
