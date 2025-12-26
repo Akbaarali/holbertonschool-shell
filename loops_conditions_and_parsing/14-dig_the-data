@@ -2,8 +2,6 @@
 # parses an Apache log file and displays the number of occurrences of each IP/status pair
 # Format: OCCURRENCE_NUMBER IP HTTP_CODE (sorted from greatest to lowest)
 
-# extract the IP and HTTP status code, sort them, count unique occurrences, sort again,
-# and reformat the count and fields
 awk '{ print $1, $9 }' apache-access.log \
   | sort \
   | uniq -c \
