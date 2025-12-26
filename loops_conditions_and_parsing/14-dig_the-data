@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# parses an Apache log file and displays the number of occurrences of each IP/status pair
-# Format: OCCURRENCE_NUMBER IP HTTP_CODE (sorted from greatest to lowest)
 
 awk '{ print $1, $9 }' apache-access.log \
   | sort \
