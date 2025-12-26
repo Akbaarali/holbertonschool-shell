@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Group visitors by IP and HTTP status code, then display counts (desc).
+# Display the visitor IP and the HTTP status code from an Apache log file.
 
-./13-lets_parse_apache_logs \
-  | sort \
-  | uniq -c \
-  | sort -nr \
+awk '{print $1, $9}' apache-access.log
