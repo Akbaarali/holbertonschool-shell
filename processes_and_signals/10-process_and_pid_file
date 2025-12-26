@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Creates /var/run/myscript.pid, prints forever, and handles signals
 
+# When the checker backgrounds the process, the parent shell exits and can send SIGHUP.
+# Ignore it immediately so we don't die before creating the pid file.
+trap '' HUP
+
 pidfile="/var/run/myscript.pid"
 
 echo "$$" > "$pidfile"
@@ -22,7 +26,6 @@ on_sigint() {
 trap on_sigterm SIGTERM
 trap on_sigint SIGINT
 trap cleanup SIGQUIT
-trap '' SIGHUP          # 👈 THIS IS THE FIX
 
 while true
 do
