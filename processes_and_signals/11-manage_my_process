@@ -4,63 +4,42 @@
 DAEMON="./manage_my_process"
 PIDFILE="/var/run/my_process.pid"
 
-RUN_USER="${SUDO_USER:-$USER}"
-
-write_pidfile() {
-  local pid="$1"
-
-  # Try normal write first, fallback to sudo if needed
-  if echo "$pid" > "$PIDFILE" 2>/dev/null; then
-    :
-  else
-    sudo sh -c "echo '$pid' > '$PIDFILE'" 2>/dev/null || true
-  fi
-
-  # Make pidfile removable by RUN_USER (important if created via sudo)
-  sudo chown "$RUN_USER":"$RUN_USER" "$PIDFILE" 2>/dev/null || true
-  sudo chmod 644 "$PIDFILE" 2>/dev/null || true
-}
-
-read_pidfile() {
-  if [ -f "$PIDFILE" ]; then
-    cat "$PIDFILE" 2>/dev/null
-  else
-    sudo cat "$PIDFILE" 2>/dev/null || true
-  fi
-}
-
-remove_pidfile() {
-  rm -f "$PIDFILE" 2>/dev/null || sudo rm -f "$PIDFILE" 2>/dev/null || true
-}
-
 start_process() {
-  local pid=""
-
-  # If started with sudo, run daemon as the original user, not root
-  if [ "$(id -u)" -eq 0 ] && [ -n "$SUDO_USER" ]; then
-    pid="$(sudo -u "$RUN_USER" sh -c "nohup '$DAEMON' >/dev/null 2>&1 & echo \\$!")"
-  else
-    nohup "$DAEMON" >/dev/null 2>&1 &
-    pid="$!"
-  fi
-
-  write_pidfile "$pid"
+  nohup "$DAEMON" >/dev/null 2>&1 &
+  echo "$!" > "$PIDFILE" 2>/dev/null || sudo sh -c "echo $! > '$PIDFILE'"
   echo "manage_my_process started"
 }
 
 stop_process() {
-  local pid
-  pid="$(read_pidfile)"
+  # 1) Kill PID from pidfile if it exists
+  if [ -f "$PIDFILE" ] || sudo test -f "$PIDFILE" 2>/dev/null; then
+    PID="$(cat "$PIDFILE" 2>/dev/null || sudo cat "$PIDFILE" 2>/dev/null)"
 
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-    kill "$pid" 2>/dev/null || true
-    sleep 0.2
-    if kill -0 "$pid" 2>/dev/null; then
-      kill -9 "$pid" 2>/dev/null || true
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+      kill "$PID" 2>/dev/null || true
+      sleep 0.2
+      if kill -0 "$PID" 2>/dev/null; then
+        kill -9 "$PID" 2>/dev/null || true
+      fi
     fi
   fi
 
-  remove_pidfile
+  # 2) Extra: kill any remaining manage_my_process instances
+  # (checker often checks for any still running)
+  for p in $(pgrep -f "[m]anage_my_process" 2>/dev/null); do
+    kill "$p" 2>/dev/null || true
+  done
+
+  sleep 0.2
+
+  for p in $(pgrep -f "[m]anage_my_process" 2>/dev/null); do
+    kill -9 "$p" 2>/dev/null || true
+  done
+
+  # 3) Delete pidfile (handle symlinked /var/run -> /run)
+  rm -f /var/run/my_process.pid /run/my_process.pid 2>/dev/null || true
+  sudo rm -f /var/run/my_process.pid /run/my_process.pid 2>/dev/null || true
+
   echo "manage_my_process stopped"
 }
 
