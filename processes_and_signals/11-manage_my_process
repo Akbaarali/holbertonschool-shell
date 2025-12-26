@@ -4,48 +4,42 @@
 PIDFILE="/var/run/my_process.pid"
 DAEMON="./manage_my_process"
 
-SUDO=""
-if [ "$(id -u)" -ne 0 ]; then
-  SUDO="sudo"
-fi
-
 start_process() {
-  $SUDO mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
+  mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
 
   nohup "$DAEMON" >/dev/null 2>&1 &
-  $SUDO sh -c "echo $! > '$PIDFILE'" 2>/dev/null || true
+  echo "$!" > "$PIDFILE"
 
   echo "manage_my_process started"
 }
 
 stop_process() {
-  if $SUDO test -f "$PIDFILE" 2>/dev/null; then
-    PID="$($SUDO cat "$PIDFILE" 2>/dev/null)"
+  if [ -f "$PIDFILE" ]; then
+    PID="$(cat "$PIDFILE" 2>/dev/null)"
 
-    if [ -n "$PID" ]; then
-      $SUDO kill "$PID" 2>/dev/null || true
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+      kill "$PID" 2>/dev/null || true
+
+      # Give it a moment, then force kill if still alive
+      sleep 0.2
+      if kill -0 "$PID" 2>/dev/null; then
+        kill -9 "$PID" 2>/dev/null || true
+      fi
     fi
 
-    $SUDO rm -f "$PIDFILE" 2>/dev/null || true
+    rm -f "$PIDFILE" 2>/dev/null || true
   fi
+
+  # Extra safety: if anything is still running, kill by name
+  pkill -f "./manage_my_process" 2>/dev/null || true
+  pkill -f "manage_my_process" 2>/dev/null || true
 
   echo "manage_my_process stopped"
 }
 
 restart_process() {
-  # Do stop/start silently, then print only "restarted"
-  if $SUDO test -f "$PIDFILE" 2>/dev/null; then
-    PID="$($SUDO cat "$PIDFILE" 2>/dev/null)"
-    if [ -n "$PID" ]; then
-      $SUDO kill "$PID" 2>/dev/null || true
-    fi
-    $SUDO rm -f "$PIDFILE" 2>/dev/null || true
-  fi
-
-  $SUDO mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
-  nohup "$DAEMON" >/dev/null 2>&1 &
-  $SUDO sh -c "echo $! > '$PIDFILE'" 2>/dev/null || true
-
+  stop_process >/dev/null 2>&1
+  start_process >/dev/null 2>&1
   echo "manage_my_process restarted"
 }
 
