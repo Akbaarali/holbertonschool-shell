@@ -4,46 +4,81 @@
 DAEMON="./manage_my_process"
 PIDFILE="/var/run/my_process.pid"
 
-do_start() {
-  nohup "$DAEMON" >/dev/null 2>&1 &
-  sudo sh -c "echo $! > '$PIDFILE'"
+RUN_USER="${SUDO_USER:-$USER}"
+
+write_pidfile() {
+  local pid="$1"
+
+  # Try normal write first, fallback to sudo if needed
+  if echo "$pid" > "$PIDFILE" 2>/dev/null; then
+    :
+  else
+    sudo sh -c "echo '$pid' > '$PIDFILE'" 2>/dev/null || true
+  fi
+
+  # Make pidfile removable by RUN_USER (important if created via sudo)
+  sudo chown "$RUN_USER":"$RUN_USER" "$PIDFILE" 2>/dev/null || true
+  sudo chmod 644 "$PIDFILE" 2>/dev/null || true
+}
+
+read_pidfile() {
+  if [ -f "$PIDFILE" ]; then
+    cat "$PIDFILE" 2>/dev/null
+  else
+    sudo cat "$PIDFILE" 2>/dev/null || true
+  fi
+}
+
+remove_pidfile() {
+  rm -f "$PIDFILE" 2>/dev/null || sudo rm -f "$PIDFILE" 2>/dev/null || true
+}
+
+start_process() {
+  local pid=""
+
+  # If started with sudo, run daemon as the original user, not root
+  if [ "$(id -u)" -eq 0 ] && [ -n "$SUDO_USER" ]; then
+    pid="$(sudo -u "$RUN_USER" sh -c "nohup '$DAEMON' >/dev/null 2>&1 & echo \\$!")"
+  else
+    nohup "$DAEMON" >/dev/null 2>&1 &
+    pid="$!"
+  fi
+
+  write_pidfile "$pid"
   echo "manage_my_process started"
 }
 
-do_stop() {
-  if sudo test -f "$PIDFILE"; then
-    PID="$(sudo cat "$PIDFILE" 2>/dev/null)"
+stop_process() {
+  local pid
+  pid="$(read_pidfile)"
 
-    if [ -n "$PID" ] && sudo kill -0 "$PID" 2>/dev/null; then
-      sudo kill "$PID" 2>/dev/null || true
-      sleep 0.2
-      if sudo kill -0 "$PID" 2>/dev/null; then
-        sudo kill -9 "$PID" 2>/dev/null || true
-      fi
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+    sleep 0.2
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -9 "$pid" 2>/dev/null || true
     fi
-
-    sudo rm -f "$PIDFILE"
   fi
 
+  remove_pidfile
   echo "manage_my_process stopped"
 }
 
-do_restart() {
-  # must print ONLY: manage_my_process restarted
-  do_stop >/dev/null 2>&1
-  do_start >/dev/null 2>&1
+restart_process() {
+  stop_process >/dev/null 2>&1
+  start_process >/dev/null 2>&1
   echo "manage_my_process restarted"
 }
 
 case "$1" in
   start)
-    do_start
+    start_process
     ;;
   stop)
-    do_stop
+    stop_process
     ;;
   restart)
-    do_restart
+    restart_process
     ;;
   *)
     echo "Usage: manage_my_process {start|stop|restart}"
