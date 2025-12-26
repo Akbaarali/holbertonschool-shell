@@ -4,36 +4,49 @@
 PIDFILE="/var/run/my_process.pid"
 DAEMON="./manage_my_process"
 
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+  SUDO="sudo"
+fi
+
 start_process() {
-  mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null
+  $SUDO mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
 
   nohup "$DAEMON" >/dev/null 2>&1 &
-  echo "$!" > "$PIDFILE"
+  $SUDO sh -c "echo $! > '$PIDFILE'" 2>/dev/null || true
 
   echo "manage_my_process started"
 }
 
 stop_process() {
-  if [ -f "$PIDFILE" ]; then
-    PID="$(cat "$PIDFILE" 2>/dev/null)"
+  if $SUDO test -f "$PIDFILE" 2>/dev/null; then
+    PID="$($SUDO cat "$PIDFILE" 2>/dev/null)"
 
-    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-      kill "$PID" 2>/dev/null || true
-
-      # give it a moment to exit, then force kill if needed
-      sleep 0.1
-      if kill -0 "$PID" 2>/dev/null; then
-        kill -9 "$PID" 2>/dev/null || true
-      fi
+    if [ -n "$PID" ]; then
+      $SUDO kill "$PID" 2>/dev/null || true
     fi
 
-    rm -f "$PIDFILE" 2>/dev/null || true
+    $SUDO rm -f "$PIDFILE" 2>/dev/null || true
   fi
 
-  # extra safety: kill any leftover instance (helps if pidfile was wrong/stale)
-  pkill -f "manage_my_process" 2>/dev/null || true
-
   echo "manage_my_process stopped"
+}
+
+restart_process() {
+  # Do stop/start silently, then print only "restarted"
+  if $SUDO test -f "$PIDFILE" 2>/dev/null; then
+    PID="$($SUDO cat "$PIDFILE" 2>/dev/null)"
+    if [ -n "$PID" ]; then
+      $SUDO kill "$PID" 2>/dev/null || true
+    fi
+    $SUDO rm -f "$PIDFILE" 2>/dev/null || true
+  fi
+
+  $SUDO mkdir -p "$(dirname "$PIDFILE")" 2>/dev/null || true
+  nohup "$DAEMON" >/dev/null 2>&1 &
+  $SUDO sh -c "echo $! > '$PIDFILE'" 2>/dev/null || true
+
+  echo "manage_my_process restarted"
 }
 
 case "$1" in
@@ -44,9 +57,7 @@ case "$1" in
     stop_process
     ;;
   restart)
-    stop_process >/dev/null 2>&1
-    start_process >/dev/null 2>&1
-    echo "manage_my_process restarted"
+    restart_process
     ;;
   *)
     echo "Usage: manage_my_process {start|stop|restart}"
