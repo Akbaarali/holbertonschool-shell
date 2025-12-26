@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Creates a PID file, prints messages forever, and handles signals
+
+pid_file="/var/run/myscript.pid"
+
+# Write PID to pid file
+echo "$$" > "$pid_file"
+
+cleanup_and_exit() {
+    rm -f "$pid_file"
+    exit 0
+}
+
+on_sigterm() {
+    echo "I hate the kill command"
+    cleanup_and_exit
+}
+
+on_sigint() {
+    echo "Y U no love me?!"
+}
+
+# SIGTERM: print message + cleanup + exit
+trap 'on_sigterm' SIGTERM
+# SIGINT: print message only (no exit)
+trap 'on_sigint' SIGINT
+# SIGQUIT: cleanup + exit (no extra message required)
+trap 'cleanup_and_exit' SIGQUIT
+
+while true
+do
+    echo "To infinity and beyond"
+    sleep 2
+done
