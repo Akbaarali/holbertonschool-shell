@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Writes "I am alive!" to /tmp/my_process every 2 seconds forever
+
+OUT_FILE="/tmp/my_process"
+
+# Ensure file exists
+touch "$OUT_FILE"
+
+while true; do
+  echo "I am alive!" >> "$OUT_FILE"
+  sleep 2
+done
