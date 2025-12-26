@@ -2,3 +2,6 @@
 # Display the visitor IP and the HTTP status code from an Apache log file.
 
 awk '{print $1, $9}' apache-access.log
+| sort \
+  | uniq -c \
+  | sort -nr \
