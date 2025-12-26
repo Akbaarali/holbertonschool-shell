@@ -22,6 +22,7 @@ on_sigint() {
 trap on_sigterm SIGTERM
 trap on_sigint SIGINT
 trap cleanup SIGQUIT
+trap '' SIGHUP          # 👈 THIS IS THE FIX
 
 while true
 do
